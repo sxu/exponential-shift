@@ -5,7 +5,7 @@ CXXFLAGS += -O3
 # CXXFLAGS += -g
 
 
-all : bin/demo # bin/gen_cayley bin/graph_to_matrix bin/graph_to_graph
+all : bin/demo
 
 bin/demo : include/*.h
 bin/demo : src/demo.cpp

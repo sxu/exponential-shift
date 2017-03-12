@@ -1,19 +1,49 @@
+#include <cmath>
+#include <iostream>
 #include <vector>
 #include "exp_shift.h"
 #include "graph.h"
 
-using exp_shift::Adjacency;
-using exp_shift::Edge;
-using exp_shift::Vertex;
-using exp_shift::VertexDistLess;
-using exp_shift::partition;
+using namespace exp_shift;
+using std::cout;
+using std::cerr;
+using std::endl;
 
 int main() {
-  std::vector<Edge> es;
-  std::vector<Vertex> vs;
-  exp_shift::Graph<Adjacency> g(es, 0);
-  partition<Adjacency, Vertex, VertexDistLess, offsetof(Vertex, pairing_node)>(
-      g, vs, 0.5
-  );
+  size_t k = 5000;
+  size_t n = k * k;
+  EdgeList<Edge> es = grid2<Edge>(k, k);
+  Graph<Adjacency> g(es);
+  std::vector<Vertex> vs(n);
+  double lambda = 0.5;
+
+  partition(g, vs, lambda);
+
+  size_t count = 0;
+  for (auto& e : es) {
+    if (vs[e.v1].ancestor != vs[e.v2].ancestor) {
+      count++;
+    }
+  }
+
+  cout << static_cast<double>(count) / es.size()
+       << " fraction of edges cut."
+       << endl;
+
+  double max_radius = -1;
+  double total_radius = 0;
+  for (auto & v : vs) {
+    max_radius = std::max(max_radius, v.radius);
+    total_radius += v.radius;
+  }
+
+  cout << "max radius: " << max_radius << ", "
+       << "expected:  " << log(n) / lambda
+       << endl;
+
+  cout << "avg radius: " << total_radius / n << ", "
+       << "hope:  " << 1 / lambda
+       << endl;
+
   return 0;
 }
