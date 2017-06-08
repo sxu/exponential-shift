@@ -21,11 +21,10 @@ struct Adjacency {
 
   Adjacency() = default;
 
-  Adjacency(size_t v_, double length_)
-    : v(v_)
-  { }
+  Adjacency(size_t v_) : v(v_) { }
 
-  void set(size_t u, const Edge& e) {
+  template <typename EdgeT>
+  void set(size_t u, const EdgeT& e) {
     v = u ^ e.v1 ^ e.v2;
   }
 };
@@ -35,28 +34,28 @@ struct Vertex {
   size_t id;
   size_t parent;
   size_t ancestor;
+  double shifted_dist;
   double dist;
-  double radius;
   bool finished;
 
   Vertex() = default;
 
-  void initialize(size_t i, double d) {
+  void initialize(size_t i, double shift) {
     id = parent = ancestor = i;
-    dist = d;
-    radius = 0;
+    shifted_dist = shift;
+    dist = 0;
     finished = false;
     // pairing_node.reset();
   }
 
   bool relax(const Vertex& v, const Adjacency& a) {
-    double new_dist = v.dist + 1;
-    if (dist <= new_dist) {
+    double new_dist = v.shifted_dist + 1;
+    if (shifted_dist <= new_dist) {
       return false;
     }
 
-    radius = v.radius + 1;
-    dist = new_dist;
+    dist = v.dist + 1;
+    shifted_dist = new_dist;
     parent = v.id;
     ancestor = v.ancestor;
 
@@ -64,65 +63,7 @@ struct Vertex {
   }
 
   bool operator<(const Vertex& o) const {
-    return dist < o.dist;
-  }
-};
-
-template <typename EdgeT>
-struct EdgeList {
-  size_t n;
-  std::vector<EdgeT> edges;
-
-  EdgeList(size_t n_ = 0) : n(n_) { }
-
-  size_t size() const {
-    return edges.size();
-  }
-
-  void push_back(const EdgeT& e) {
-    edges.push_back(e);
-  }
-
-  template <typename... Args>
-  void emplace_back(Args&&... args) {
-    edges.emplace_back(std::forward<Args>(args)...);
-  }
-
-  void clear() {
-    n = 0;
-    edges.clear();
-  }
-
-  void reserve(size_t m) {
-    edges.reserve(m);
-  }
-
-  void resize(size_t m) {
-    edges.resize(m);
-  }
-
-  EdgeT& operator[](const size_t i) {
-    return edges[i];
-  }
-
-  const EdgeT& operator[](const size_t i) const {
-    return edges[i];
-  }
-
-  typename std::vector<EdgeT>::iterator begin() {
-    return edges.begin();
-  }
-
-  typename std::vector<EdgeT>::const_iterator begin() const {
-    return edges.cbegin();
-  }
-
-  typename std::vector<EdgeT>::iterator end() {
-    return edges.end();
-  }
-
-  typename std::vector<EdgeT>::const_iterator end() const {
-    return edges.cend();
+    return shifted_dist < o.shifted_dist;
   }
 };
 
@@ -138,13 +79,13 @@ public:
   }
 
   template <typename EdgeT>
-  Graph(const EdgeList<EdgeT>& es) {
-    build_graph(es);
+  Graph(const std::vector<EdgeT>& es, size_t n_) {
+    build_graph(es, n_);
   }
 
   template <typename EdgeT>
-  void build_graph(const EdgeList<EdgeT>& es) {
-    n = es.n;
+  void build_graph(const std::vector<EdgeT>& es, size_t n_) {
+    n = n_;
     size_t m = es.size();
     std::vector<size_t> degrees(n);
 
@@ -176,8 +117,8 @@ public:
 };
 
 template <typename EdgeT>
-EdgeList<EdgeT> grid2(size_t n, size_t m) {
-  EdgeList<EdgeT> es(n * m);
+std::vector<EdgeT> grid2(size_t n, size_t m) {
+  std::vector<EdgeT> es;
 
   es.reserve(n * (m - 1) + m * (n - 1));
   for (size_t i = 0; i < n; i++) {
